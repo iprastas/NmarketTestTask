@@ -12,17 +12,47 @@ namespace NmarketTestTask.Parsers
             var houses = new List<House>();
 
             var workbook = new XLWorkbook(path);
-            var sheet = workbook.Worksheets.First();
+            var sheets = workbook.Worksheets;
 
-            #region Примеры использования библиотек
+            foreach (var sheet in sheets)
+            {
+                House house = new House();
 
-            var cell = sheet.Cell(1, 1);
-            var row = cell.WorksheetRow().RowNumber();
-            var column = cell.WorksheetColumn().ColumnNumber();
-            var value = cell.GetValue<string>();
-            var cells = sheet.Cells().Where(c => !c.GetValue<string>().Equals("1")).ToList();
+                var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 0;
+                var lastColumn = sheet.LastColumnUsed()?.ColumnNumber() ?? 0;
 
-            #endregion
+                for (int row = 1; row <= lastRow; row++)
+                {
+                    for (int col = 1; col <= lastColumn; col++)
+                    {
+                        var cell = sheet.Cell(row, col);
+                        string value = cell.GetValue < string>().Trim();
+
+                        if (string.IsNullOrEmpty(value))
+                        {
+                            continue;
+                        }
+
+                        if (value.Contains("Дом"))
+                        {
+                            house = houses.FirstOrDefault(h => h.Name == value);
+                            if (house == null)
+                            {
+                                house = new House { Name = value };
+                                houses.Add(house);
+                            }
+                        }
+                        else if (value.StartsWith("№"))
+                        {
+                            string flatNum = value.Replace("№", "").Trim();
+                            string price = sheet.Cell(row + 1, col).GetValue<string>().Trim(); //
+
+                            house.Flats.Add(new Flat { Number = flatNum, Price = price });
+                        }
+                    }
+                }
+
+            }
 
             return houses;
         }
