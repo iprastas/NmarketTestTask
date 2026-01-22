@@ -1,6 +1,8 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+﻿using DocumentFormat.OpenXml.Office2013.PowerPoint.Roaming;
+using DocumentFormat.OpenXml.Spreadsheet;
 using HtmlAgilityPack;
 using NmarketTestTask.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -10,7 +12,7 @@ namespace NmarketTestTask.Parsers
     {
         public IList<House> GetHouses(string path)
         {
-            var houses = new List<House>();
+            var houses = new List<House>();  // для реальных данных я бы взяла Dictionary<string, House>, тк поиск FirstOrDefault медленнее
 
             var doc = new HtmlDocument();
             doc.Load(path);
@@ -23,7 +25,12 @@ namespace NmarketTestTask.Parsers
 
             foreach (var table in tables)
             {
-                var nodes = table.SelectNodes("//tbody/tr");
+                var nodes = table.SelectNodes(".//tbody/tr");
+                if (nodes == null) 
+                { 
+                    continue; 
+                }
+
                 foreach (var node in nodes) 
                 {
                     var houseNode = node.SelectSingleNode(".//td[contains(@class,'house')]");
@@ -41,7 +48,7 @@ namespace NmarketTestTask.Parsers
                         Price = priceNode.InnerText.Trim()
                     };
 
-                    var house = houses.FirstOrDefault(h => h.Name == houseName);
+                    var house = houses.FirstOrDefault(h => h.Name.Equals(houseName, StringComparison.OrdinalIgnoreCase));
                     if (house == null)
                     {
                         house = new House { Name = houseName};
